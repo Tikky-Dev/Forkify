@@ -1,8 +1,16 @@
-import { API_URL } from "./config";
+import { async } from "regenerator-runtime";
+import { API_URL, RESULT_PER_PAGE } from "./config";
 import { getJSON } from "./helpers";
+import resaultsView from "./views/resaultsView";
 
 const state = {
     recipe: {},
+    search: {
+        querry: '',
+        results: [],
+        page: 1,
+        resultPerPage: RESULT_PER_PAGE,
+    }
 }
 
 const loadRecipe = async function(id) {
@@ -21,8 +29,34 @@ const loadRecipe = async function(id) {
             ingredients: recipe.ingredients
         };
     } catch (err) {
-        console.error("Caught error in model: " + err);
+        throw err;
     }
 }
 
-export {state, loadRecipe};
+const loadSearchResults = async function(querry){
+    try {
+        resaultsView.renderSpinner();
+        state.search.querry = querry;
+        const data = await getJSON(`${API_URL}?search=${querry}`);
+
+        state.search.results = data.data.recipes.map(rec => {
+            return {
+                id: rec.id,
+                title: rec.title,
+                publisher: rec.publisher,
+                image: rec.image_url
+            }
+        })
+    } catch (err) {
+        throw err;
+    }
+}
+
+const getSearchResultPage = function(page = state.search.page){
+    state.search.page = page;
+    const pageStart = (page - 1) * state.search.resultPerPage;
+    const pageEnd = page * state.search.resultPerPage;
+    return state.search.results.slice(pageStart, pageEnd);
+}
+
+export {state, loadRecipe, loadSearchResults, getSearchResultPage};

@@ -21,4 +21,4 @@ const getJSON = async function(url){
     }
 }
 
-export{getJSON, timeout}
+export{getJSON, timeout};
