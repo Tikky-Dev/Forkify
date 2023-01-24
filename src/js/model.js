@@ -1,4 +1,3 @@
-import { async } from "regenerator-runtime";
 import { API_URL, RESULT_PER_PAGE } from "./config";
 import { getJSON } from "./helpers";
 import resaultsView from "./views/resaultsView";
@@ -10,7 +9,8 @@ const state = {
         results: [],
         page: 1,
         resultPerPage: RESULT_PER_PAGE,
-    }
+    },
+    bookmarks: [],
 }
 
 const loadRecipe = async function(id) {
@@ -28,6 +28,9 @@ const loadRecipe = async function(id) {
             cookingTime: recipe.cooking_time,
             ingredients: recipe.ingredients
         };
+
+        if(state.bookmarks.some(bm => bm.id === id)) state.recipe.bookmarked = true;
+        else state.recipe.bookmarked = false;
     } catch (err) {
         throw err;
     }
@@ -47,6 +50,8 @@ const loadSearchResults = async function(querry){
                 image: rec.image_url
             }
         })
+
+        state.search.page = 1;
     } catch (err) {
         throw err;
     }
@@ -59,4 +64,32 @@ const getSearchResultPage = function(page = state.search.page){
     return state.search.results.slice(pageStart, pageEnd);
 }
 
-export {state, loadRecipe, loadSearchResults, getSearchResultPage};
+const updateServings = function(newServings){
+    state.recipe.ingredients.forEach(ing => {
+        ing.quantity *= (newServings/state.recipe.servings);
+    });
+
+    state.recipe.servings = newServings;
+}
+
+const toggleBookmar = function(recipe){    
+    if(recipe.id === state.recipe.id){
+        state.recipe.bookmarked = !state.recipe.bookmarked;
+    }
+
+    if(state.recipe.bookmarked === true) state.bookmarks.push(recipe);
+    if(state.recipe.bookmarked === false) {
+        const index = state.bookmarks.findIndex(el => el.id === recipe.id);
+        state.bookmarks.splice(index, 1);
+    };
+
+    localStorage.setItem('bookmarks', JSON.stringify(state.bookmarks));
+}
+
+const init = function(){
+    const storage = localStorage.getItem('bookmarks');
+    if(storage) state.bookmarks = JSON.parse(storage);
+}
+init();
+
+export {state, loadRecipe, loadSearchResults, getSearchResultPage, updateServings, toggleBookmar};
